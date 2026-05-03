@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Mascot;
 
 class AuthController extends Controller
 {
@@ -54,6 +55,11 @@ class AuthController extends Controller
             'email'    => $request->email,
             'password' => Hash::make($request->password),
         ]);
+        Mascot::create([
+        'user_id' => $user->id,
+        'level' => 1,
+        'xp' => 0
+]);
 
         return response([
             'user'  => $user,

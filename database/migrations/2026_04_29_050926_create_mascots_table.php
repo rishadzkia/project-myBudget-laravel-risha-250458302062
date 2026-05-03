@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('mascots', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
-            $table->integer('level');
-            $table->integer('xp');
-            $table->timestamps();
+            $table->integer('level')->default(1);
+            $table->integer('xp')->default(0);
+            $table->timestamps(); 
 
 
         });

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('monthly_setting_id')->constrained('monthly_settings')->cascadeOnDelete();
             $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
-            $table->decimal('budget_amount', 15, 2);
+            $table->decimal('budget_amount', 15, 2)->default(0);
             $table->unique(['monthly_setting_id', 'category_id']);
             $table->timestamps();
 

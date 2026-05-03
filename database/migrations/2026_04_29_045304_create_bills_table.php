@@ -17,8 +17,8 @@ return new class extends Migration
     $table->string('bill_name', 100);
     $table->decimal('amount', 15, 2);
     $table->integer('due_day');
-    $table->integer('last_paid_year');
-    $table->integer('last_paid_month');
+    $table->integer('last_paid_year')->nullable();
+    $table->integer('last_paid_month')->nullable();
     $table->timestamps();
 
 

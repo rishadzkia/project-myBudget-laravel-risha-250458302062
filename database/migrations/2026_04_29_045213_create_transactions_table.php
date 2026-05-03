@@ -19,8 +19,8 @@ return new class extends Migration
         $table->foreignId('bill_id')->nullable()->constrained('bills')->nullOnDelete();
         $table->enum('type', ['pemasukan', 'pengeluaran']);
         $table->decimal('amount', 15, 2);
-        $table->timestamp('date');
-        $table->timestamp('created_at')->useCurrent();
+        $table->timestamp('transaction_time')->nullable();
+        $table->timestamps();
 
     
 
