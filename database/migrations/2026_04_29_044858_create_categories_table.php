@@ -15,7 +15,7 @@ return new class extends Migration
         $table->id();
         $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
         $table->string('category', 100);
-        $table->string('icon', 50);
+        $table->string('icon', 50)->nullable();
         $table->timestamps();
 
 

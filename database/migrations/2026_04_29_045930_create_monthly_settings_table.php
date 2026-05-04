@@ -18,7 +18,7 @@ return new class extends Migration
         $table->integer('year');
         $table->decimal('daily_budget', 15, 2);
         $table->decimal('total_income', 15, 2)->default(0);
-        $table->decimal('total_saving', 15, 2)->default(0);
+        $table->decimal('total_saving', 15, 2)->default(0); 
         // Ini untuk satu user, satu bulan aja tampil nya, dan satu tahun 
         $table->unique(['user_id', 'month', 'year']);
         $table->timestamps();
