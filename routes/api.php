@@ -41,3 +41,5 @@ Route::apiResource('/api-transactions', TransactionController::class)
     ->middleware('auth:sanctum');
 // Monthly Setting
 Route::apiResource('/api-monthly-settings', MonthlySettingController::class) ->middleware('auth:sanctum');
+// Budget
+Route::apiResource('/api-budgets', BudgetController::class) ->middleware('auth:sanctum');

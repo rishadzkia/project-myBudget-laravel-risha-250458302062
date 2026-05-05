@@ -25,7 +25,8 @@ class DatabaseSeeder extends Seeder
             // AccountSeeder::class,
             // BillSeeder::class,
             // CategorySeeder::class,
-            TransactionSeeder::class,
+            // TransactionSeeder::class,
+            MonthlySettingSeeder::class,
             
         ]);
     }

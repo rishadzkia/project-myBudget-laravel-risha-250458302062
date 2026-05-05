@@ -8,10 +8,10 @@ use Illuminate\Http\Request;
 
 class MonthlySettingController extends Controller
 {
-    // 🔍 GET semua
-    public function index()
+    // 🔍 GET semua (punya user login)
+    public function index(Request $request)
     {
-        $data = MonthlySetting::all();
+        $data = MonthlySetting::where('user_id', $request->user()->id)->get();
 
         return response([
             'data' => $data
@@ -22,14 +22,14 @@ class MonthlySettingController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
             'month' => 'required|integer|min:1|max:12',
             'year' => 'required|integer',
-            'daily_budget' => 'required|numeric|min:0'
         ]);
 
-        // 🔥 CEK DUPLIKAT (karena unique constraint)
-        $exists = MonthlySetting::where('user_id', $request->user_id)
+        $userId = $request->user()->id;
+
+        // 🔥 Cek duplikat
+        $exists = MonthlySetting::where('user_id', $userId)
             ->where('month', $request->month)
             ->where('year', $request->year)
             ->first();
@@ -41,12 +41,11 @@ class MonthlySettingController extends Controller
         }
 
         $data = MonthlySetting::create([
-            'user_id' => $request->user_id,
+            'user_id' => $userId,
             'month' => $request->month,
             'year' => $request->year,
-            'daily_budget' => $request->daily_budget,
-            'total_income' => 0,
-            'total_saving' => 0
+            'total_income' => $request->total_income ?? 0,
+            'total_saving' => $request->total_saving ?? 0
         ]);
 
         return response([
@@ -56,9 +55,11 @@ class MonthlySettingController extends Controller
     }
 
     // 🔍 DETAIL
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $data = MonthlySetting::find($id);
+        $data = MonthlySetting::where('user_id', $request->user()->id)
+            ->where('id', $id)
+            ->first();
 
         if (! $data) {
             return response([
@@ -74,7 +75,9 @@ class MonthlySettingController extends Controller
     // ✏️ UPDATE
     public function update(Request $request, $id)
     {
-        $data = MonthlySetting::find($id);
+        $data = MonthlySetting::where('user_id', $request->user()->id)
+            ->where('id', $id)
+            ->first();
 
         if (! $data) {
             return response([
@@ -83,7 +86,6 @@ class MonthlySettingController extends Controller
         }
 
         $data->update([
-            'daily_budget' => $request->daily_budget ?? $data->daily_budget,
             'total_income' => $request->total_income ?? $data->total_income,
             'total_saving' => $request->total_saving ?? $data->total_saving
         ]);
@@ -95,20 +97,22 @@ class MonthlySettingController extends Controller
     }
 
     // ❌ DELETE
-    public function destroy($id)
-    {
-        $data = MonthlySetting::find($id);
+    // public function destroy(Request $request, $id)
+    // {
+    //     $data = MonthlySetting::where('user_id', $request->user()->id)
+    //         ->where('id', $id)
+    //         ->first();
 
-        if (! $data) {
-            return response([
-                'message' => 'Data tidak ditemukan'
-            ], 404);
-        }
+    //     if (! $data) {
+    //         return response([
+    //             'message' => 'Data tidak ditemukan'
+    //         ], 404);
+    //     }
 
-        $data->delete();
+    //     $data->delete();
 
-        return response([
-            'message' => 'Data berhasil dihapus'
-        ], 200);
-    }
+    //     return response([
+    //         'message' => 'Data berhasil dihapus'
+    //     ], 200);
+    // }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class MonthlySetting extends Model
 {
@@ -13,7 +13,6 @@ class MonthlySetting extends Model
         'user_id',
         'month',
         'year',
-        'daily_budget',
         'total_income',
         'total_saving'
     ];
