@@ -8,13 +8,13 @@ use Illuminate\Http\Request;
 
 class AccountController extends Controller
 {
-    // 🔍 GET semua accounts
-    public function index()
+    // 🔍 GET semua accounts milik user login
+    public function index(Request $request)
     {
-        $accounts = Account::all();
+        $accounts = Account::where('user_id', $request->user()->id)->get();
 
         return response([
-            'data' => $accounts 
+            'data' => $accounts
         ], 200);
     }
 
@@ -22,13 +22,12 @@ class AccountController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
             'account_name' => 'required|string|max:100',
             'saldo' => 'nullable|numeric'
         ]);
 
         $account = Account::create([
-            'user_id' => $request->user_id,
+            'user_id' => $request->user()->id,
             'account_name' => $request->account_name,
             'saldo' => $request->saldo ?? 0
         ]);
@@ -40,9 +39,11 @@ class AccountController extends Controller
     }
 
     // 🔍 GET detail account
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $account = Account::find($id);
+        $account = Account::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
 
         if (! $account) {
             return response([
@@ -58,7 +59,9 @@ class AccountController extends Controller
     // ✏️ PUT update account
     public function update(Request $request, $id)
     {
-        $account = Account::find($id);
+        $account = Account::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
 
         if (! $account) {
             return response([
@@ -78,9 +81,11 @@ class AccountController extends Controller
     }
 
     // ❌ DELETE account
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $account = Account::find($id);
+        $account = Account::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
 
         if (! $account) {
             return response([

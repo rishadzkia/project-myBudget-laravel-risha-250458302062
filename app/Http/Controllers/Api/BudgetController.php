@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Budget;
+use App\Models\Category;
 use App\Models\MonthlySetting;
 use Illuminate\Http\Request;
 
@@ -13,6 +14,9 @@ class BudgetController extends Controller
     {
         $data = Budget::with(['category', 'monthlySetting'])
             ->whereHas('monthlySetting', function ($query) use ($request) {
+                $query->where('user_id', $request->user()->id);
+            })
+            ->whereHas('category', function ($query) use ($request) {
                 $query->where('user_id', $request->user()->id);
             })
             ->get();
@@ -30,13 +34,25 @@ class BudgetController extends Controller
             'budget_amount' => 'required|numeric|min:0'
         ]);
 
+        $userId = $request->user()->id;
+
         $monthlySetting = MonthlySetting::where('id', $request->monthly_setting_id)
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $userId)
             ->first();
 
         if (! $monthlySetting) {
             return response([
                 'message' => 'Akses ditolak'
+            ], 403);
+        }
+
+        $category = Category::where('id', $request->category_id)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (! $category) {
+            return response([
+                'message' => 'Category tidak ditemukan atau bukan milik Anda'
             ], 403);
         }
 
@@ -68,6 +84,9 @@ class BudgetController extends Controller
             ->whereHas('monthlySetting', function ($query) use ($request) {
                 $query->where('user_id', $request->user()->id);
             })
+            ->whereHas('category', function ($query) use ($request) {
+                $query->where('user_id', $request->user()->id);
+            })
             ->where('id', $id)
             ->first();
 
@@ -85,6 +104,9 @@ class BudgetController extends Controller
     public function update(Request $request, $id)
     {
         $data = Budget::whereHas('monthlySetting', function ($query) use ($request) {
+                $query->where('user_id', $request->user()->id);
+            })
+            ->whereHas('category', function ($query) use ($request) {
                 $query->where('user_id', $request->user()->id);
             })
             ->where('id', $id)
@@ -113,6 +135,9 @@ class BudgetController extends Controller
     public function destroy(Request $request, $id)
     {
         $data = Budget::whereHas('monthlySetting', function ($query) use ($request) {
+                $query->where('user_id', $request->user()->id);
+            })
+            ->whereHas('category', function ($query) use ($request) {
                 $query->where('user_id', $request->user()->id);
             })
             ->where('id', $id)

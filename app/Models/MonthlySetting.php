@@ -14,7 +14,14 @@ class MonthlySetting extends Model
         'month',
         'year',
         'total_income',
-        'total_saving'
+        'total_saving',
+        'daily_budget_limit'
+    ];
+
+    protected $casts = [
+        'total_income' => 'decimal:2',
+        'total_saving' => 'decimal:2',
+        'daily_budget_limit' => 'decimal:2',
     ];
 
     public function user()

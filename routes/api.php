@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\BudgetController;
 use App\Http\Controllers\Api\MascotController;
 use App\Http\Controllers\Api\MonthlySettingController;
 use App\Http\Controllers\Api\TransactionController;
@@ -41,5 +42,6 @@ Route::apiResource('/api-transactions', TransactionController::class)
     ->middleware('auth:sanctum');
 // Monthly Setting
 Route::apiResource('/api-monthly-settings', MonthlySettingController::class) ->middleware('auth:sanctum');
+Route::middleware('auth:sanctum')->get('/api-monthly-settings/{id}/usage', [MonthlySettingController::class, 'usage']);
 // Budget
 Route::apiResource('/api-budgets', BudgetController::class) ->middleware('auth:sanctum');

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Budget;
 use App\Models\MonthlySetting;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 
 class MonthlySettingController extends Controller
@@ -24,6 +26,9 @@ class MonthlySettingController extends Controller
         $request->validate([
             'month' => 'required|integer|min:1|max:12',
             'year' => 'required|integer',
+            'total_income' => 'nullable|numeric|min:0',
+            'total_saving' => 'nullable|numeric|min:0',
+            'daily_budget_limit' => 'nullable|numeric|min:0',
         ]);
 
         $userId = $request->user()->id;
@@ -45,7 +50,8 @@ class MonthlySettingController extends Controller
             'month' => $request->month,
             'year' => $request->year,
             'total_income' => $request->total_income ?? 0,
-            'total_saving' => $request->total_saving ?? 0
+            'total_saving' => $request->total_saving ?? 0,
+            'daily_budget_limit' => $request->daily_budget_limit ?? 0,
         ]);
 
         return response([
@@ -85,9 +91,16 @@ class MonthlySettingController extends Controller
             ], 404);
         }
 
+        $request->validate([
+            'total_income' => 'nullable|numeric|min:0',
+            'total_saving' => 'nullable|numeric|min:0',
+            'daily_budget_limit' => 'nullable|numeric|min:0',
+        ]);
+
         $data->update([
             'total_income' => $request->total_income ?? $data->total_income,
-            'total_saving' => $request->total_saving ?? $data->total_saving
+            'total_saving' => $request->total_saving ?? $data->total_saving,
+            'daily_budget_limit' => $request->daily_budget_limit ?? $data->daily_budget_limit,
         ]);
 
         return response([
@@ -96,23 +109,34 @@ class MonthlySettingController extends Controller
         ], 200);
     }
 
-    // ❌ DELETE
-    // public function destroy(Request $request, $id)
-    // {
-    //     $data = MonthlySetting::where('user_id', $request->user()->id)
-    //         ->where('id', $id)
-    //         ->first();
+    public function usage(Request $request, $id)
+    {
+        $monthlySetting = MonthlySetting::where('user_id', $request->user()->id)
+            ->where('id', $id)
+            ->first();
 
-    //     if (! $data) {
-    //         return response([
-    //             'message' => 'Data tidak ditemukan'
-    //         ], 404);
-    //     }
+        if (! $monthlySetting) {
+            return response([
+                'message' => 'Data tidak ditemukan'
+            ], 404);
+        }
 
-    //     $data->delete();
+        $spentToday = Transaction::where('user_id', $request->user()->id)
+            ->where('type', 'pengeluaran')
+            ->whereDate('transaction_time', now()->toDateString())
+            ->sum('amount');
 
-    //     return response([
-    //         'message' => 'Data berhasil dihapus'
-    //     ], 200);
-    // }
+        $totalBudget = Budget::where('monthly_setting_id', $monthlySetting->id)
+            ->sum('budget_amount');
+
+        return response([
+            'data' => [
+                'monthly_setting' => $monthlySetting,
+                'spent_today' => $spentToday,
+                'daily_budget_limit' => $monthlySetting->daily_budget_limit,
+                'over_daily_limit' => $monthlySetting->daily_budget_limit > 0 && $spentToday > $monthlySetting->daily_budget_limit,
+                'total_monthly_budget' => $totalBudget,
+            ]
+        ], 200);
+    }
 }

@@ -8,10 +8,10 @@ use Illuminate\Http\Request;
 
 class BillController extends Controller
 {
-    // 🔍 GET semua bills
-    public function index()
+    // 🔍 GET semua bills milik user login
+    public function index(Request $request)
     {
-        $bills = Bill::all();
+        $bills = Bill::where('user_id', $request->user()->id)->get();
 
         return response([
             'data' => $bills
@@ -22,14 +22,15 @@ class BillController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
             'bill_name' => 'required|string|max:100',
             'amount' => 'required|numeric',
             'due_day' => 'required|integer|min:1|max:31',
+            'last_paid_year' => 'nullable|integer',
+            'last_paid_month' => 'nullable|integer',
         ]);
 
         $bill = Bill::create([
-            'user_id' => $request->user_id,
+            'user_id' => $request->user()->id,
             'bill_name' => $request->bill_name,
             'amount' => $request->amount,
             'due_day' => $request->due_day,
@@ -44,9 +45,11 @@ class BillController extends Controller
     }
 
     // 🔍 GET detail bill
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
-        $bill = Bill::find($id);
+        $bill = Bill::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
 
         if (! $bill) {
             return response([
@@ -62,8 +65,9 @@ class BillController extends Controller
     // ✏️ PUT update bill
     public function update(Request $request, int $id)
     {
-
-        $bill = Bill::find($id);
+        $bill = Bill::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
 
         if (! $bill) {
             return response([
@@ -75,6 +79,8 @@ class BillController extends Controller
             'bill_name' => 'sometimes|string|max:100',
             'amount' => 'sometimes|numeric',
             'due_day' => 'sometimes|integer|min:1|max:31',
+            'last_paid_year' => 'nullable|integer',
+            'last_paid_month' => 'nullable|integer',
         ]);
 
         $bill->update([
@@ -92,9 +98,11 @@ class BillController extends Controller
     }
 
     // ❌ DELETE bill
-    public function destroy(int $id)
+    public function destroy(Request $request, int $id)
     {
-        $bill = Bill::find($id);
+        $bill = Bill::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
 
         if (! $bill) {
             return response([

@@ -8,10 +8,10 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    // 🔍 GET semua category
-    public function index()
+    // 🔍 GET semua category milik user login
+    public function index(Request $request)
     {
-        $categories = Category::all();
+        $categories = Category::where('user_id', $request->user()->id)->get();
 
         return response([
             'data' => $categories
@@ -22,13 +22,12 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
             'category' => 'required|string|max:100',
             'icon' => 'nullable|string|max:50'
         ]);
 
         $category = Category::create([
-            'user_id' => $request->user_id,
+            'user_id' => $request->user()->id,
             'category' => $request->category,
             'icon' => $request->icon
         ]);
@@ -40,9 +39,11 @@ class CategoryController extends Controller
     }
 
     // 🔍 GET detail category
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $category = Category::find($id);
+        $category = Category::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
 
         if (! $category) {
             return response([
@@ -58,7 +59,9 @@ class CategoryController extends Controller
     // ✏️ UPDATE category
     public function update(Request $request, $id)
     {
-        $category = Category::find($id);
+        $category = Category::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
 
         if (! $category) {
             return response([
@@ -78,9 +81,11 @@ class CategoryController extends Controller
     }
 
     // ❌ DELETE category
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $category = Category::find($id);
+        $category = Category::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
 
         if (! $category) {
             return response([

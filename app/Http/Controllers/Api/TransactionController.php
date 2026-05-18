@@ -3,16 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Transaction;
 use App\Models\Account;
+use App\Models\Bill;
+use App\Models\Category;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 
 class TransactionController extends Controller
 {
-    // 🔍 GET semua transaksi
-    public function index()
+    // 🔍 GET semua transaksi milik user login
+    public function index(Request $request)
     {
-        $transactions = Transaction::with(['account', 'category'])->get();
+        $transactions = Transaction::with(['account', 'category', 'bill'])
+            ->where('user_id', $request->user()->id)
+            ->get();
 
         return response([
             'data' => $transactions
@@ -23,24 +27,50 @@ class TransactionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
             'account_id' => 'required|exists:accounts,id',
             'category_id' => 'nullable|exists:categories,id',
+            'bill_id' => 'nullable|exists:bills,id',
             'type' => 'required|in:pemasukan,pengeluaran',
             'amount' => 'required|numeric|min:0'
         ]);
 
+        $userId = $request->user()->id;
+
+        $account = Account::where('id', $request->account_id)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (! $account) {
+            return response([
+                'message' => 'Account tidak ditemukan atau bukan milik Anda'
+            ], 403);
+        }
+
+        if ($request->category_id && ! Category::where('id', $request->category_id)
+            ->where('user_id', $userId)
+            ->exists()) {
+            return response([
+                'message' => 'Category tidak ditemukan atau bukan milik Anda'
+            ], 403);
+        }
+
+        if ($request->bill_id && ! Bill::where('id', $request->bill_id)
+            ->where('user_id', $userId)
+            ->exists()) {
+            return response([
+                'message' => 'Bill tidak ditemukan atau bukan milik Anda'
+            ], 403);
+        }
+
         $transaction = Transaction::create([
-            'user_id' => $request->user_id,
+            'user_id' => $userId,
             'account_id' => $request->account_id,
             'category_id' => $request->category_id,
+            'bill_id' => $request->bill_id,
             'type' => $request->type,
             'amount' => $request->amount,
             'transaction_time' => now()
         ]);
-
-        // 🔥 update saldo
-        $account = Account::findOrFail($request->account_id);
 
         if ($request->type === 'pemasukan') {
             $account->saldo += $request->amount;
@@ -57,9 +87,11 @@ class TransactionController extends Controller
     }
 
     // 🔍 DETAIL
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $transaction = Transaction::with(['account', 'category'])->find($id);
+        $transaction = Transaction::with(['account', 'category', 'bill'])
+            ->where('user_id', $request->user()->id)
+            ->find($id);
 
         if (! $transaction) {
             return response([
@@ -75,7 +107,19 @@ class TransactionController extends Controller
     // ✏️ UPDATE (FIX SALDO 🔥)
     public function update(Request $request, $id)
     {
-        $transaction = Transaction::find($id);
+        $request->validate([
+            'account_id' => 'sometimes|exists:accounts,id',
+            'category_id' => 'nullable|exists:categories,id',
+            'bill_id' => 'nullable|exists:bills,id',
+            'type' => 'sometimes|in:pemasukan,pengeluaran',
+            'amount' => 'sometimes|numeric|min:0'
+        ]);
+
+        $userId = $request->user()->id;
+
+        $transaction = Transaction::where('id', $id)
+            ->where('user_id', $userId)
+            ->first();
 
         if (! $transaction) {
             return response([
@@ -83,33 +127,60 @@ class TransactionController extends Controller
             ], 404);
         }
 
-        $account = Account::findOrFail($transaction->account_id);
+        $oldAccount = Account::findOrFail($transaction->account_id);
 
-        // 🔥 BALIKKAN saldo lama dulu
         if ($transaction->type === 'pemasukan') {
-            $account->saldo -= $transaction->amount;
+            $oldAccount->saldo -= $transaction->amount;
         } else {
-            $account->saldo += $transaction->amount;
+            $oldAccount->saldo += $transaction->amount;
         }
 
-        // ambil data baru
+        $oldAccount->save();
+
+        $newAccountId = $request->account_id ?? $transaction->account_id;
+        $newAccount = Account::where('id', $newAccountId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (! $newAccount) {
+            return response([
+                'message' => 'Account baru tidak ditemukan atau bukan milik Anda'
+            ], 403);
+        }
+
+        if ($request->category_id && ! Category::where('id', $request->category_id)
+            ->where('user_id', $userId)
+            ->exists()) {
+            return response([
+                'message' => 'Category tidak ditemukan atau bukan milik Anda'
+            ], 403);
+        }
+
+        if ($request->bill_id && ! Bill::where('id', $request->bill_id)
+            ->where('user_id', $userId)
+            ->exists()) {
+            return response([
+                'message' => 'Bill tidak ditemukan atau bukan milik Anda'
+            ], 403);
+        }
+
         $newType = $request->type ?? $transaction->type;
         $newAmount = $request->amount ?? $transaction->amount;
 
-        // 🔥 TERAPKAN saldo baru
         if ($newType === 'pemasukan') {
-            $account->saldo += $newAmount;
+            $newAccount->saldo += $newAmount;
         } else {
-            $account->saldo -= $newAmount;
+            $newAccount->saldo -= $newAmount;
         }
 
-        $account->save();
+        $newAccount->save();
 
-        // update transaksi
         $transaction->update([
+            'account_id' => $newAccountId,
             'category_id' => $request->category_id ?? $transaction->category_id,
-            'amount' => $newAmount,
-            'type' => $newType
+            'bill_id' => $request->bill_id ?? $transaction->bill_id,
+            'type' => $newType,
+            'amount' => $newAmount
         ]);
 
         return response([
@@ -119,9 +190,11 @@ class TransactionController extends Controller
     }
 
     // ❌ DELETE (FIX SALDO 🔥)
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $transaction = Transaction::find($id);
+        $transaction = Transaction::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
 
         if (! $transaction) {
             return response([
@@ -131,7 +204,6 @@ class TransactionController extends Controller
 
         $account = Account::findOrFail($transaction->account_id);
 
-        // 🔥 BALIKKAN saldo
         if ($transaction->type === 'pemasukan') {
             $account->saldo -= $transaction->amount;
         } else {
