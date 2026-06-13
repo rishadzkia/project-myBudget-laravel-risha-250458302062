@@ -18,7 +18,7 @@ return new class extends Migration
             $table->date('date');
             $table->decimal('total_pengeluaran', 15, 2);
             $table->decimal('daily_budget', 15, 2);
-            $table->boolean('is_success')->default(false);
+            $table->boolean('is_success')->default(false); 
             $table->unique(['monthly_setting_id', 'date']);
             $table->timestamps();
 

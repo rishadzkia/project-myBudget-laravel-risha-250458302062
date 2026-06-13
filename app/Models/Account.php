@@ -12,7 +12,8 @@ class Account extends Model
     protected $fillable = [
         'user_id',
         'account_name',
-        'saldo'
+        'saldo',
+        'symbol'
     ];
 
     public function user()

@@ -23,13 +23,16 @@ class AccountController extends Controller
     {
         $request->validate([
             'account_name' => 'required|string|max:100',
-            'saldo' => 'nullable|numeric'
+            'saldo' => 'nullable|numeric',
+            'symbol' => 'nullable|integer'
         ]);
 
         $account = Account::create([
             'user_id' => $request->user()->id,
             'account_name' => $request->account_name,
-            'saldo' => $request->saldo ?? 0
+            'saldo' => $request->saldo ?? 0,
+            'symbol' => $request->symbol ?? 0,
+
         ]);
 
         return response([
